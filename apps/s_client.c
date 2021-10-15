@@ -1943,12 +1943,12 @@ int s_client_main(int argc, char **argv)
         goto end;
 
 #ifndef OPENSSL_NO_CNSM
-    if (cnsm_flag && SSL_CTX_use_certificate_file(ctx, key_enc_file, SSL_FILETYPE_PEM) <= 0)
+    if (cnsm_flag && SSL_CTX_use_enc_certificate_file(ctx, cert_enc_file, SSL_FILETYPE_PEM) <= 0)
     {
             ERR_print_errors(bio_err);
             goto end;
     }
-    if (cnsm_flag && SSL_CTX_use_enc_PrivateKey_file(ctx, cert_enc_file, SSL_FILETYPE_PEM) <= 0)
+    if (cnsm_flag && SSL_CTX_use_enc_PrivateKey_file(ctx, key_enc_file, SSL_FILETYPE_PEM) <= 0)
     {
             ERR_print_errors(bio_err);
             goto end;

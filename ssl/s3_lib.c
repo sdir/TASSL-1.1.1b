@@ -5035,12 +5035,13 @@ int ssl_derive_SM2(SSL *s, EVP_PKEY *privkey, EVP_PKEY *pubkey,  int gensecret)
          goto err;
     }
     
-    /*查找第一个数据加密功能的证书,作为加密证书使用，跟排列顺序无关*/
+    /*鏌ユ壘绗竴涓暟鎹姞瀵嗗姛鑳界殑璇佷功,浣滀负鍔犲瘑璇佷功浣跨敤锛岃窡鎺掑垪椤哄簭鏃犲叧*/
     //for(i=0; i<sk_X509_num(s->session->peer_chain); i++){
     
-    /*从链表最后开始，查找第一个数据加密功能的证书,作为加密证书使用，跟排列顺序无关*/
+    /*浠庨摼琛ㄦ渶鍚庡紑濮嬶紝鏌ユ壘绗竴涓暟鎹姞瀵嗗姛鑳界殑璇佷功,浣滀负鍔犲瘑璇佷功浣跨敤锛岃窡鎺掑垪椤哄簭鏃犲叧*/
     for(i=sk_X509_num(s->session->peer_chain)-1; i>=0; i--){
-        if((X509_get_extension_flags(sk_X509_value(s->session->peer_chain, i)) & EXFLAG_KUSAGE) && (X509_get_key_usage(sk_X509_value(s->session->peer_chain, i)) & X509v3_KU_DATA_ENCIPHERMENT))
+        if((X509_get_extension_flags(sk_X509_value(s->session->peer_chain, i)) & EXFLAG_KUSAGE) 
+            && (X509_get_key_usage(sk_X509_value(s->session->peer_chain, i)) & (X509v3_KU_KEY_ENCIPHERMENT | X509v3_KU_DATA_ENCIPHERMENT | X509v3_KU_KEY_AGREEMENT)))
             break;
     }
         
@@ -5059,9 +5060,9 @@ int ssl_derive_SM2(SSL *s, EVP_PKEY *privkey, EVP_PKEY *pubkey,  int gensecret)
 	
     /* First : Set the server tag */
 #ifdef STD_ZAZB
-    dctx->server = s->server;       //国密标准定义ZAZB
+    dctx->server = s->server;       //鍥藉瘑鏍囧噯瀹氫箟ZAZB
 #else
-    dctx->server = !s->server;      //国密局默认顺序ZBZA
+    dctx->server = !s->server;      //鍥藉瘑灞�榛樿椤哄簭ZBZA
 #endif
 
     dctx->peer_ecdhe_key = EVP_PKEY_get0_EC_KEY(pubkey);
@@ -5088,7 +5089,7 @@ int ssl_derive_SM2(SSL *s, EVP_PKEY *privkey, EVP_PKEY *pubkey,  int gensecret)
         goto err;
     }
     
-    local_e_sm4 = ENGINE_get_cipher_engine(NID_sm4_cbc);        //如果加载了SM4引擎，则协商密文的premasterkey；如果没有加载则协商明文的premasterkey
+    local_e_sm4 = ENGINE_get_cipher_engine(NID_sm4_cbc);        //濡傛灉鍔犺浇浜哠M4寮曟搸锛屽垯鍗忓晢瀵嗘枃鐨刾remasterkey锛涘鏋滄病鏈夊姞杞藉垯鍗忓晢鏄庢枃鐨刾remasterkey
     if(local_e_sm4)
         pctx->app_data = 1;
     else
@@ -5118,7 +5119,7 @@ int ssl_derive_SM2(SSL *s, EVP_PKEY *privkey, EVP_PKEY *pubkey,  int gensecret)
 
             rv = rv && tls13_generate_handshake_secret(s, pms, pmslen);
         } else {
-            //如果此ssl的私钥加载了sm2引擎，则使用引擎进行masterkey计算
+            //濡傛灉姝sl鐨勭閽ュ姞杞戒簡sm2寮曟搸锛屽垯浣跨敤寮曟搸杩涜masterkey璁＄畻
             ENGINE *local_e_sm2 = NULL;
             EVP_PKEY * local_evp_ptr = NULL;
             local_evp_ptr = s->cert->pkeys[SSL_PKEY_ECC_ENC].privatekey;
@@ -5126,7 +5127,7 @@ int ssl_derive_SM2(SSL *s, EVP_PKEY *privkey, EVP_PKEY *pubkey,  int gensecret)
                 local_e_sm2 = EVP_PKEY_pmeth_engine(local_evp_ptr);
             if(local_evp_ptr && local_e_sm4){
                 if(local_e_sm2)
-                    ENGINE_set_tass_flags(local_e_sm4, TASS_FLAG_PRE_MASTER_KEY_CIPHER);       //调用SM2引擎的ECDHE-SM4-SM3套件，是密文的premasterkey; 不调用SM2引擎的为明文premasterkey
+                    ENGINE_set_tass_flags(local_e_sm4, TASS_FLAG_PRE_MASTER_KEY_CIPHER);       //璋冪敤SM2寮曟搸鐨凟CDHE-SM4-SM3濂椾欢锛屾槸瀵嗘枃鐨刾remasterkey; 涓嶈皟鐢⊿M2寮曟搸鐨勪负鏄庢枃premasterkey
                 if(!(rv = ENGINE_ssl_generate_master_secret(local_e_sm4, s, pms, pmslen, 0))){
                     pmslen = 0;
                     goto err;
